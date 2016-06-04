@@ -1,12 +1,12 @@
-
+import logging
 from flask import Flask, jsonify, request
 
 from config import Config
 from log import configure
 
-
 configure(Config.ENV)
-app = Flask('mind-me')
+app = Flask('minder')
+logger = logging.getLogger('minder')
 
 
 DEFAULT_ECHO_RESPONSE = {
@@ -40,6 +40,7 @@ def index():
 
 @app.route('/', methods=['POST'])
 def minder():
+    logger.info(request.data)
     return jsonify(DEFAULT_ECHO_RESPONSE)
 
 

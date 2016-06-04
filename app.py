@@ -80,5 +80,12 @@ def _parse_request(request):
     return _get_echo_response(speech_output, card_output, reprompt_message)
 
 
+@app.route('/test_sms/<number>/<message>')
+def send_message(number, message):
+    from sms import send_sms
+    send_sms('+1 {}'.format(number), message)
+    return 'success'
+
+
 if __name__ == '__main__':
     app.run(port=Config.PORT, debug=True)

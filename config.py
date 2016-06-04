@@ -5,3 +5,6 @@ class Config(object):
 
     PORT = int(os.environ.get('PORT', 7200))
     ENV = os.environ.get('MINDER_ENV', 'dev').lower()
+    TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+    TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+    TWILIO_FROM_NUMBER = os.environ.get('TWILIO_FROM_NUMBER')

@@ -9,7 +9,7 @@ def configure(env):
 
         'formatters': {
             'standard': {
-                'format': '%(name)s - %(levelname)s - %(message)s'
+                'format': '[%(asctime)s] [%(process)d] [%(levelname)s] %(name)s - %(message)s'
             },
         },
         'handlers': {

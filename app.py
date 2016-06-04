@@ -9,6 +9,11 @@ app = Flask('minder')
 logger = logging.getLogger('minder')
 
 
+@app.before_request
+def log_request():
+    logger.info('{} {}'.format(request.method, request.path))
+
+
 DEFAULT_ECHO_RESPONSE = {
     'version': '1.0',
     'response': {

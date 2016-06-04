@@ -1,6 +1,7 @@
 import logging
 import json
 import flask
+import uuid
 import httplib2
 from flask import Flask, jsonify, request
 
@@ -15,6 +16,7 @@ from oauth2client import client
 
 configure(Config.ENV)
 app = Flask('minder')
+app.secret_key = str(uuid.uuid4())
 logger = logging.getLogger('minder')
 
 
@@ -135,16 +137,17 @@ def oauth2_callback():
     else:
         auth_code = flask.request.args.get('code')
         credentials = flow.step2_exchange(auth_code)
-        flask.session['credentials'] = credentials.to_json()
+        set_item('credentials', credentials.to_json())
         return flask.redirect(flask.url_for('calendar'))
 
 
 @app.route('/calendar')
 def calendar():
-    if 'credentials' not in flask.session:
+    credentials = get_item('credentials')
+    if not credentials:
         return flask.redirect(flask.url_for('oauth2_callback'))
 
-    credentials = client.OAuth2Credentials.from_json(flask.session['credentials'])
+    credentials = client.OAuth2Credentials.from_json(credentials)
 
     if credentials.access_token_expired:
         return flask.redirect(flask.url_for('oauth2_callback'))
@@ -156,6 +159,4 @@ def calendar():
         return jsonify(status='ok', events=response.get('items'))
 
 if __name__ == '__main__':
-    import uuid
-    app.secret_key = str(uuid.uuid4())
     app.run(port=Config.PORT, debug=True)

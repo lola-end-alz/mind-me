@@ -61,28 +61,35 @@ def minder():
     logger.info(data)
 
     try:
-        toggle, item, question = _parse_request(data['request'])
-        if question:
-            saved_toggle = get_item(item)
-            if not saved_toggle:
-                saved_toggle = 'off'
-            speech_output = '{} is {}'.format(item, saved_toggle)
-            card_output = 'user asked if {} is {}. we responded with {}'.format(item, saved_toggle, speech_output)
-            reprompt_message = 'reprompt message. how does this work?'
+        launch, toggle, item, question = _parse_request(data['request'])
+        if launch:
+            speech_output = 'welcome to minder! what can i do for you today?'
+            card_output = 'user launched minder'
+            reprompt_message = 'what can i do for you today?'
+            response = _get_echo_response(speech_output, card_output, reprompt_message, end_session=False)
         else:
-            speech_output = 'you\'ve turned {} the {}'.format(toggle, item)
-            card_output = 'user turned {} the {}'.format(toggle, item)
-            reprompt_message = 'reprompt message. how does this work?'
+            if question:
+                saved_toggle = get_item(item)
+                if not saved_toggle:
+                    saved_toggle = 'off'
+                speech_output = 'hello, the {} is {}'.format(item, saved_toggle)
+                card_output = 'user asked if {} is {}. we responded with {}'.format(item, saved_toggle, speech_output)
+                reprompt_message = ''
+            else:
+                speech_output = 'you\'ve turned {} the {}'.format(toggle, item)
+                card_output = 'user turned {} the {}'.format(toggle, item)
+                reprompt_message = ''
 
-            set_item(item, toggle)
-            send_sms(Config.USER_PHONE_NUMBER, card_output)
+                set_item(item, toggle)
+                send_sms(Config.USER_PHONE_NUMBER, card_output)
 
-        response = _get_echo_response(speech_output, card_output, reprompt_message)
+            response = _get_echo_response(speech_output, card_output, reprompt_message)
     except Exception:
         speech_output = 'sorry, i didn\'t understand that. please try again'
         card_output = 'couldn\'t understand command from user'
         reprompt_message = 'reprompt message. how does this work?'
         response = _get_echo_response(speech_output, card_output, reprompt_message)
+
     return jsonify(response)
 
 
@@ -94,12 +101,14 @@ def _parse_request(request):
     # handle LaunchRequest
     intent = request.get('intent', {})
     intent_name = intent.get('name')
+    if intent_name == 'LaunchRequest':
+        return True, None, None, False
     if intent_name in ('ItemToggle', 'ItemToggleQuestion'):
         question = False
         if intent_name == 'ItemToggleQuestion':
             question = True
         slots = intent['slots']
-        return slots['toggle']['value'], slots['item']['value'], question
+        return False, slots['toggle']['value'], slots['item']['value'], question
     else:
         raise Exception('no intent provided or unknown intent name')
 

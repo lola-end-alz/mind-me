@@ -66,6 +66,7 @@ def minder():
                 saved_toggle = 'off'
             speech_output = '{} is {}'.format(item, saved_toggle)
             card_output = 'user asked if {} is {}. we responded with {}'.format(item, saved_toggle, speech_output)
+            reprompt_message = 'reprompt message. how does this work?'
         else:
             speech_output = 'you\'ve turned {} the {}'.format(toggle, item)
             card_output = 'user turned {} the {}'.format(toggle, item)

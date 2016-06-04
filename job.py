@@ -6,7 +6,7 @@ from sms import send_sms
 from db import db, set_item, get_item
 
 
-scheduler = Scheduler(connection=db)
+scheduler = Scheduler(interval=5, connection=db)
 logger = logging.getLogger('minder.job')
 
 
@@ -15,13 +15,12 @@ def schedule_the_job(item):
     with db.lock('the_job_lock'):
         scheduled = scheduler.enqueue_in(timedelta(seconds=Config.REMINDER_DELAY),
                                          the_job,
-                                         item,
-                                         queue_name='default')
+                                         item)
         set_item('the_job', scheduled.id)
     logger.info('Released lock after scheduling')
 
 
-def the_job(item, queue_name=None):
+def the_job(item):
     logger.info('Running job')
     send_sms(Config.PROVIDER_PHONE_NUMBER, 'Did you remember to turn off the {}'.format(item))
     logger.info('Sent sms')

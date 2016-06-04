@@ -7,7 +7,7 @@ from flask import Flask, jsonify, request
 from config import Config
 from log import configure
 from sms import send_sms
-from db import db
+from db import set_item, get_item
 
 from apiclient import discovery
 from oauth2client import client
@@ -60,9 +60,8 @@ def minder():
 
     try:
         toggle, item, question = _parse_request(data['request'])
-
         if question:
-            saved_toggle = db.get_item(item)
+            saved_toggle = get_item(item)
             if not saved_toggle:
                 saved_toggle = 'off'
             speech_output = '{} is {}'.format(item, saved_toggle)
@@ -72,7 +71,7 @@ def minder():
             card_output = 'user turned {} the {}'.format(toggle, item)
             reprompt_message = 'reprompt message. how does this work?'
 
-            db.set_item(item, toggle)
+            set_item(item, toggle)
             send_sms(Config.USER_PHONE_NUMBER, card_output)
 
         response = _get_echo_response(speech_output, card_output, reprompt_message)
@@ -96,23 +95,24 @@ def _parse_request(request):
         question = False
         if intent_name == 'ItemToggleQuestion':
             question = True
-        return _get_item_toggle_response(intent), question
+        slots = intent['slots']
+        return slots['toggle']['value'], slots['item']['value'], question
     else:
         raise Exception('no intent provided or unknown intent name')
 
 
-def _get_launch_response(intent):
-    speech_output = 'welcome to minder! what can i do for you?'
-    card_output = 'user launched minder'
-    reprompt_message = 'reprompt message. how does this work?'
-    should_end_session = False
+# def _get_launch_response(intent):
+#     speech_output = 'welcome to minder! what can i do for you?'
+#     card_output = 'user launched minder'
+#     reprompt_message = 'reprompt message. how does this work?'
+#     should_end_session = False
 
-    return speech_output, card_output, reprompt_message, should_end_session
+#     return speech_output, card_output, reprompt_message, should_end_session
 
 
-def _get_item_toggle_response(intent, question=False):
-    slots = intent['slots']
-    return slots['toggle']['value'], slots['item']['value']
+# def _get_item_toggle_response(intent, question=False):
+#     slots = intent['slots']
+#     return slots['toggle']['value'], slots['item']['value']
 
 
 @app.route('/test_sms/<number>/<message>')

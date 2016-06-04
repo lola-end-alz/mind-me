@@ -14,8 +14,9 @@ def schedule_the_job(item):
     logger.info('Aquiring lock before scheduling')
     with db.lock('the_job_lock'):
         scheduled = scheduler.enqueue_in(timedelta(seconds=Config.REMINDER_DELAY),
-                                     the_job,
-                                     item)
+                                         the_job,
+                                         item,
+                                         queue_name='default')
         set_item('the_job', scheduled.id)
     logger.info('Released lock after scheduling')
 

@@ -7,5 +7,5 @@ listen = ['default']
 
 if __name__ == '__main__':
     with Connection(db):
-        worker = Worker(list(map(Queue, listen)))
+        worker = Worker(['default'])
         worker.work()

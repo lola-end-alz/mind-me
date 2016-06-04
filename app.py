@@ -22,7 +22,6 @@ configure(Config.ENV)
 app = Flask('minder')
 app.secret_key = str(uuid.uuid4())
 logger = logging.getLogger('minder')
-q = Queue(connection=db)
 
 
 @app.before_request
@@ -179,13 +178,6 @@ def calendar():
         response = calendar_service.events().list(calendarId='primary').execute()
 
         return jsonify(status='ok', events=response.get('items'))
-
-
-@app.route('/dummy_job')
-def dummy_job():
-    from job import dummy_job
-    job = q.enqueue_call(func=dummy_job, args=(), result_ttl=Config.WORKER_TTL)
-    logger.info('Enqueued job: {}'.format(job.get_id()))
 
 
 @app.route('/calendar/create')

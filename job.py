@@ -15,12 +15,13 @@ def schedule_the_job(item):
     with db.lock('the_job_lock'):
         scheduled = scheduler.enqueue_in(timedelta(seconds=Config.REMINDER_DELAY),
                                          the_job,
-                                         item)
+                                         item,
+                                         queue_name='default')
         set_item('the_job', scheduled.id)
     logger.info('Released lock after scheduling')
 
 
-def the_job(item):
+def the_job(item, queue_name=None):
     logger.info('Running job')
     send_sms(Config.PROVIDER_PHONE_NUMBER, 'Did you remember to turn off the {}'.format(item))
     logger.info('Sent sms')

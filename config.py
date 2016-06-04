@@ -11,5 +11,7 @@ class Config(object):
     TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
     TWILIO_FROM_NUMBER = os.environ.get('TWILIO_FROM_NUMBER')
 
-    USER_PHONE_NUMBER = os.environ.get('USER_PHONE_NUMBER', '+17742650382')
+    USER_PHONE_NUMBER = os.environ.get('USER_PHONE_NUMBER')
+    PROVIDER_PHONE_NUMBER = os.environ.get('PROVIDER_PHONE_NUMBER')
+    REMINDER_DELAY = int(os.environ.get('REMINDER_DELAY', 5))
     WORKER_TTL = os.environ.get('WORKER_TTL', 5000)

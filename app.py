@@ -5,6 +5,7 @@ from flask import Flask, jsonify, request
 from config import Config
 from log import configure
 from sms import send_sms
+from db import db
 
 
 configure(Config.ENV)
@@ -53,7 +54,12 @@ def minder():
     logger.info(data)
 
     try:
-        speech_output, card_output, reprompt_message = _parse_request(data['request'])
+        toggle, item = _parse_request(data['request'])
+        speech_output = 'you\'ve turned {} the {}'.format(toggle, item)
+        card_output = 'user turned {} the {}'.format(toggle, item)
+        reprompt_message = 'reprompt message. how does this work?'
+
+        db.set_item(item, toggle)
         send_sms(Config.USER_PHONE_NUMBER, card_output)
         response = _get_echo_response(speech_output, card_output, reprompt_message)
     except Exception:
@@ -74,20 +80,7 @@ def _parse_request(request):
         raise Exception('no intent provided or unknown intent name')
 
     slots = intent['slots']
-    item = slots['item']['value']
-    toggle = slots['toggle']['value']
-
-    speech_output = 'you\'ve turned {} the {}'.format(toggle, item)
-    card_output = 'user turned {} the {}'.format(toggle, item)
-    reprompt_message = 'reprompt message. how does this work?'
-
-    return speech_output, card_output, reprompt_message
-
-
-@app.route('/test_sms/<number>/<message>')
-def send_message(number, message):
-    send_sms('+1 {}'.format(number), message)
-    return 'success'
+    return slots['toggle']['value'], slots['item']['value']
 
 
 if __name__ == '__main__':

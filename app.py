@@ -14,17 +14,17 @@ DEFAULT_ECHO_RESPONSE = {
     'response': {
         'outputSpeech': {
             'type': 'PlainText',
-            'text': 'output speech for alexa'
+            'text': '{speech_output}'
         },
         'card': {
             'type': 'Simple',
-            'title': 'HelloMinder',
-            'content': 'minder is working?!'
+            'title': 'Minder',
+            'content': '{card_output}'
         },
         'reprompt': {
             'outputSpeech': {
                 'type': 'PlainText',
-                'text': 'reprompting the message?'
+                'text': '{reprompt_message}'
             }
         },
         'shouldEndSession': False
@@ -40,8 +40,33 @@ def index():
 
 @app.route('/', methods=['POST'])
 def minder():
-    logger.info(request.data)
-    return jsonify(DEFAULT_ECHO_RESPONSE)
+    data = request.data
+    logger.info(data)
+
+    response = _parse_request(data['request'])
+    return jsonify(response)
+
+
+def _parse_request(request):
+    request_type = request['type']
+    if request_type != 'IntentRequest':
+        raise Exception()
+
+    intent = request['intent']
+    if intent['name'] != 'ItemToggle':
+        raise Exception('unknown intent name')
+
+    slots = intent['slots']
+    item = slots['item']['value']
+    toggle = slots['toggle']['on']
+
+    speech_output = 'you\'ve turned {} the {}'.format(toggle, item)
+    card_output = 'user turned {} the {}'.format(toggle, item)
+    reprompt_message = 'reprompt message. how does this work?'
+
+    return DEFAULT_ECHO_RESPONSE.format(speech_output=speech_output,
+                                        card_output=card_output,
+                                        reprompt_message=reprompt_message)
 
 
 if __name__ == '__main__':

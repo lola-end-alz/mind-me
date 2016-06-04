@@ -102,7 +102,8 @@ def minder():
                 send_sms(Config.USER_PHONE_NUMBER, card_output)
 
             response = _get_echo_response(speech_output, card_output, reprompt_message)
-    except Exception:
+    except Exception as e:
+        logger.error(e)
         speech_output = 'sorry, i didn\'t understand that. please try again'
         card_output = 'couldn\'t understand command from user'
         reprompt_message = 'reprompt message. how does this work?'
@@ -113,22 +114,22 @@ def minder():
 
 def _parse_request(request):
     request_type = request['type']
-    if request_type != 'IntentRequest':
-        raise Exception()
+    if request_type not in ('IntentRequest', 'LaunchRequest'):
+        raise Exception('unrecognized request type')
 
-    # handle LaunchRequest
-    intent = request.get('intent', {})
-    intent_name = intent.get('name')
-    if intent_name == 'LaunchRequest':
+    if request_type == 'LaunchRequest':
         return True, None, None, False
-    if intent_name in ('ItemToggle', 'ItemToggleQuestion'):
-        question = False
-        if intent_name == 'ItemToggleQuestion':
-            question = True
-        slots = intent['slots']
-        return False, slots['toggle']['value'], slots['item']['value'], question
     else:
-        raise Exception('no intent provided or unknown intent name')
+        intent = request.get('intent', {})
+        intent_name = intent.get('name')
+        if intent_name in ('ItemToggle', 'ItemToggleQuestion'):
+            question = False
+            if intent_name == 'ItemToggleQuestion':
+                question = True
+            slots = intent['slots']
+            return False, slots['toggle']['value'], slots['item']['value'], question
+        else:
+            raise Exception('no intent provided or unknown intent name')
 
 
 # def _get_launch_response(intent):

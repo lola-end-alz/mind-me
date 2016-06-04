@@ -6,7 +6,7 @@ from config import Config
 
 parts = urlparse(Config.REDIS_URL)
 db = Redis(host=parts.hostname,
-           port=parts.host)
+           port=parts.port)
 
 
 def set_item(item, toggle):

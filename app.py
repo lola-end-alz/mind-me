@@ -1,11 +1,16 @@
 import logging
 import json
+import flask
+import httplib2
 from flask import Flask, jsonify, request
 
 from config import Config
 from log import configure
 from sms import send_sms
 from db import db
+
+from apiclient import discovery
+from oauth2client import client
 
 
 configure(Config.ENV)
@@ -110,14 +115,46 @@ def _get_item_toggle_response(intent, question=False):
     return slots['toggle']['value'], slots['item']['value']
 
 
-def _get_item_toggle_question_response(intent):
-    return
-
-
 @app.route('/test_sms/<number>/<message>')
 def send_message(number, message):
     send_sms('+1 {}'.format(number), message)
     return 'success'
 
+
+@app.route('/oauth2_callback')
+def oauth2_callback():
+    flow = client.flow_from_clientsecrets(
+        'client_secret.json',
+        scope='https://www.googleapis.com/auth/calendar.readonly',
+        redirect_uri=flask.url_for('oauth2_callback', _external=True))
+
+    if 'code' not in flask.request.args:
+        auth_uri = flow.step1_get_authorize_url()
+        return flask.redirect(auth_uri)
+    else:
+        auth_code = flask.request.args.get('code')
+        credentials = flow.step2_exchange(auth_code)
+        flask.session['credentials'] = credentials.to_json()
+        return flask.redirect(flask.url_for('calendar'))
+
+
+@app.route('/calendar')
+def calendar():
+    if 'credentials' not in flask.session:
+        return flask.redirect(flask.url_for('oauth2_callback'))
+
+    credentials = client.OAuth2Credentials.from_json(flask.session['credentials'])
+
+    if credentials.access_token_expired:
+        return flask.redirect(flask.url_for('oauth2_callback'))
+    else:
+        http_auth = credentials.authorize(httplib2.Http())
+        calendar_service = discovery.build('calendar', 'v3', http_auth)
+        response = calendar_service.events().list(calendarId='primary').execute()
+
+        return jsonify(status='ok', events=response.get('items'))
+
 if __name__ == '__main__':
+    import uuid
+    app.secret_key = str(uuid.uuid4())
     app.run(port=Config.PORT, debug=True)

@@ -22,7 +22,7 @@ def schedule_the_job(item):
 
 def the_job(item):
     logger.info('Running job')
-    send_sms(Config.PROVIDER_PHONE_NUMBER, 'Did you remember to turn off the {}'.format(item))
+    send_sms(Config.USER_PHONE_NUMBER, 'Did you remember to turn off the {}'.format(item))
     logger.info('Sent sms')
     schedule_the_job(item)
     logger.info('Scheduled job to run again')

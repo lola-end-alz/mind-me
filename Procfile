@@ -1,3 +1,3 @@
 web: gunicorn app:app
 worker: python worker.py
-scheduler: python scheduler.py
+scheduler: rqscheduler -i 5

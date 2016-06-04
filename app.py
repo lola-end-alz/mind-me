@@ -92,7 +92,7 @@ def minder():
                     cancel_the_job()
 
                 set_item(item, toggle)
-                send_sms(Config.USER_PHONE_NUMBER, card_output)
+                send_sms(Config.PROVIDER_PHONE_NUMBER, card_output)
 
             response = _get_echo_response(speech_output, card_output, reprompt_message)
     except Exception as e:

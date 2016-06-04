@@ -89,6 +89,7 @@ def minder():
                     schedule_the_job(item)
 
                 if toggle == 'off':
+                    logger.info('Attempting to cancel job')
                     cancel_the_job()
 
                 set_item(item, toggle)

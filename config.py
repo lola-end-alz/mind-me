@@ -13,5 +13,5 @@ class Config(object):
 
     USER_PHONE_NUMBER = os.environ.get('USER_PHONE_NUMBER')
     PROVIDER_PHONE_NUMBER = os.environ.get('PROVIDER_PHONE_NUMBER')
-    REMINDER_DELAY = os.environ.geT('REMINDER_DELAY', 5)
+    REMINDER_DELAY = os.environ.get('REMINDER_DELAY', 5)
     WORKER_TTL = os.environ.get('WORKER_TTL', 5000)

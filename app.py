@@ -3,6 +3,7 @@ import json
 import flask
 import uuid
 import httplib2
+from datetime import datetime, timedelta
 from flask import Flask, jsonify, request
 
 from config import Config
@@ -12,7 +13,7 @@ from db import set_item, get_item, db
 
 from rq import Queue
 from rq.job import Job
-from worker import conn
+from job import scheduler
 
 from apiclient import discovery
 from oauth2client import client
@@ -85,6 +86,18 @@ def minder():
                 card_output = 'user turned {} the {}'.format(toggle, item)
                 reprompt_message = ''
 
+                if toggle == 'on':
+                    the_job = scheduler.enqueue_in(timedelta(minutes=1),
+                                                   send_sms,
+                                                   Config.USER_PHONE_NUMBER,
+                                                   'Did you remember to turn off the {}'.format(item))
+                    set_item('the_job', the_job.id)
+
+                if toggle == 'off':
+                    the_job = get_item('the_job')
+                    if the_job in scheduler:
+                        scheduler.cancel(the_job)
+
                 set_item(item, toggle)
                 send_sms(Config.USER_PHONE_NUMBER, card_output)
 
@@ -142,7 +155,7 @@ def send_message(number, message):
 def oauth2_callback():
     flow = client.flow_from_clientsecrets(
         'client_secret.json',
-        scope='https://www.googleapis.com/auth/calendar.readonly',
+        scope='https://www.googleapis.com/auth/calendar',
         redirect_uri=flask.url_for('oauth2_callback', _external=True))
 
     if 'code' not in flask.request.args:
@@ -172,11 +185,31 @@ def calendar():
 
         return jsonify(status='ok', events=response.get('items'))
 
+
 @app.route('/dummy_job')
 def dummy_job():
     from job import dummy_job
     job = q.enqueue_call(func=dummy_job, args=(), result_ttl=Config.WORKER_TTL))
     logger.info('Enqueued job: {}'.format(job.get_id()))
+
+
+@app.route('/calendar/create')
+def create_event():
+    credentials = client.OAuth2Credentials.from_json(get_item('credentials'))
+    http_auth = credentials.authorize(httplib2.Http())
+    calendar_service = discovery.build('calendar', 'v3', http_auth)
+    start = datetime.utcnow() + timedelta(minutes=5)
+    end = start + timedelta(minutes=5)
+    response = calendar_service.events().insert(
+        calendarId='primary',
+        body={
+            'description': 'testing',
+            'start': {'dateTime': start.isoformat() + 'Z'},
+            'end': {'dateTime': end.isoformat() + 'Z'}
+        }
+    ).execute()
+    return jsonify(status='ok', events=response.get('items'))
+
 
 if __name__ == '__main__':
     app.run(port=Config.PORT, debug=True)

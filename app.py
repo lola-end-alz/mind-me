@@ -50,7 +50,13 @@ def minder():
     data = json.loads(request.data)
     logger.info(data)
 
-    response = _parse_request(data['request'])
+    try:
+        response = _parse_request(data['request'])
+    except Exception:
+        speech_output = 'sorry, i didn\'t understand that. please try again'
+        card_output = 'couldn\'t understand command from user'
+        reprompt_message = 'reprompt message. how does this work?'
+        response = _get_echo_response(speech_output, card_output, reprompt_message)
     return jsonify(response)
 
 
@@ -59,9 +65,9 @@ def _parse_request(request):
     if request_type != 'IntentRequest':
         raise Exception()
 
-    intent = request['intent']
-    if intent['name'] != 'ItemToggle':
-        raise Exception('unknown intent name')
+    intent = request.get('intent', {})
+    if intent.get('name') != 'ItemToggle':
+        raise Exception('no intent provided or unknown intent name')
 
     slots = intent['slots']
     item = slots['item']['value']

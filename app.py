@@ -12,8 +12,7 @@ from sms import send_sms
 from db import set_item, get_item, db
 
 from rq import Queue
-from rq.job import Job
-from job import scheduler
+from job import schedule_the_job, cancel_the_job
 
 from apiclient import discovery
 from oauth2client import client
@@ -87,16 +86,10 @@ def minder():
                 reprompt_message = ''
 
                 if toggle == 'on':
-                    the_job = scheduler.enqueue_in(timedelta(seconds=3),
-                                                   send_sms,
-                                                   Config.USER_PHONE_NUMBER,
-                                                   'Did you remember to turn off the {}'.format(item))
-                    set_item('the_job', the_job.id)
+                    schedule_the_job(item)
 
                 if toggle == 'off':
-                    the_job = get_item('the_job')
-                    if the_job in scheduler:
-                        scheduler.cancel(the_job)
+                    cancel_the_job()
 
                 set_item(item, toggle)
                 send_sms(Config.USER_PHONE_NUMBER, card_output)

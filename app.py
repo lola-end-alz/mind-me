@@ -1,4 +1,5 @@
 import logging
+import json
 from flask import Flask, jsonify, request
 
 from config import Config
@@ -14,28 +15,29 @@ def log_request():
     logger.info('{} {}'.format(request.method, request.path))
 
 
-DEFAULT_ECHO_RESPONSE = {
-    'version': '1.0',
-    'response': {
-        'outputSpeech': {
-            'type': 'PlainText',
-            'text': '{speech_output}'
-        },
-        'card': {
-            'type': 'Simple',
-            'title': 'Minder',
-            'content': '{card_output}'
-        },
-        'reprompt': {
+def _get_echo_response(speech_output, card_output, reprompt_message):
+    return {
+        'version': '1.0',
+        'response': {
             'outputSpeech': {
                 'type': 'PlainText',
-                'text': '{reprompt_message}'
-            }
+                'text': speech_output
+            },
+            'card': {
+                'type': 'Simple',
+                'title': 'Minder',
+                'content': card_output
+            },
+            'reprompt': {
+                'outputSpeech': {
+                    'type': 'PlainText',
+                    'text': reprompt_message
+                }
+            },
+            'shouldEndSession': False
         },
-        'shouldEndSession': False
-    },
-    'sessionAttributes': {'source': 'minder'}
-}
+        'sessionAttributes': {'source': 'minder'}
+    }
 
 
 @app.route('/')
@@ -45,7 +47,7 @@ def index():
 
 @app.route('/', methods=['POST'])
 def minder():
-    data = request.data
+    data = json.loads(request.data)
     logger.info(data)
 
     response = _parse_request(data['request'])
@@ -63,15 +65,13 @@ def _parse_request(request):
 
     slots = intent['slots']
     item = slots['item']['value']
-    toggle = slots['toggle']['on']
+    toggle = slots['toggle']['value']
 
     speech_output = 'you\'ve turned {} the {}'.format(toggle, item)
     card_output = 'user turned {} the {}'.format(toggle, item)
     reprompt_message = 'reprompt message. how does this work?'
 
-    return DEFAULT_ECHO_RESPONSE.format(speech_output=speech_output,
-                                        card_output=card_output,
-                                        reprompt_message=reprompt_message)
+    return _get_echo_response(speech_output, card_output, reprompt_message)
 
 
 if __name__ == '__main__':

@@ -1,7 +1,12 @@
+
 from flask import Flask, jsonify, request
 
+from config import Config
+from log import configure
 
-app = Flask('mind-me', static_url_path='')
+
+configure(Config.ENV)
+app = Flask('mind-me')
 
 
 @app.route('/')
@@ -15,4 +20,4 @@ def minder():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port=Config.PORT, debug=True)

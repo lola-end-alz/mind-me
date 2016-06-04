@@ -4,6 +4,8 @@ from flask import Flask, jsonify, request
 
 from config import Config
 from log import configure
+from sms import send_sms
+
 
 configure(Config.ENV)
 app = Flask('minder')
@@ -51,7 +53,9 @@ def minder():
     logger.info(data)
 
     try:
-        response = _parse_request(data['request'])
+        speech_output, card_output, reprompt_message = _parse_request(data['request'])
+        send_sms(Config.USER_PHONE_NUMBER, card_output)
+        response = _get_echo_response(speech_output, card_output, reprompt_message)
     except Exception:
         speech_output = 'sorry, i didn\'t understand that. please try again'
         card_output = 'couldn\'t understand command from user'
@@ -77,12 +81,11 @@ def _parse_request(request):
     card_output = 'user turned {} the {}'.format(toggle, item)
     reprompt_message = 'reprompt message. how does this work?'
 
-    return _get_echo_response(speech_output, card_output, reprompt_message)
+    return speech_output, card_output, reprompt_message
 
 
 @app.route('/test_sms/<number>/<message>')
 def send_message(number, message):
-    from sms import send_sms
     send_sms('+1 {}'.format(number), message)
     return 'success'
 

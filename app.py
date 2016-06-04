@@ -18,7 +18,7 @@ def log_request():
     logger.info('{} {}'.format(request.method, request.path))
 
 
-def _get_echo_response(speech_output, card_output, reprompt_message):
+def _get_echo_response(speech_output, card_output, reprompt_message, end_session=True):
     return {
         'version': '1.0',
         'response': {
@@ -37,7 +37,7 @@ def _get_echo_response(speech_output, card_output, reprompt_message):
                     'text': reprompt_message
                 }
             },
-            'shouldEndSession': False
+            'shouldEndSession': end_session
         },
         'sessionAttributes': {'source': 'minder'}
     }
@@ -54,13 +54,22 @@ def minder():
     logger.info(data)
 
     try:
-        toggle, item = _parse_request(data['request'])
-        speech_output = 'you\'ve turned {} the {}'.format(toggle, item)
-        card_output = 'user turned {} the {}'.format(toggle, item)
-        reprompt_message = 'reprompt message. how does this work?'
+        toggle, item, question = _parse_request(data['request'])
 
-        db.set_item(item, toggle)
-        send_sms(Config.USER_PHONE_NUMBER, card_output)
+        if question:
+            saved_toggle = db.get_item(item)
+            if not saved_toggle:
+                saved_toggle = 'off'
+            speech_output = '{} is {}'.format(item, saved_toggle)
+            card_output = 'user asked if {} is {}. we responded with {}'.format(item, saved_toggle, speech_output)
+        else:
+            speech_output = 'you\'ve turned {} the {}'.format(toggle, item)
+            card_output = 'user turned {} the {}'.format(toggle, item)
+            reprompt_message = 'reprompt message. how does this work?'
+
+            db.set_item(item, toggle)
+            send_sms(Config.USER_PHONE_NUMBER, card_output)
+
         response = _get_echo_response(speech_output, card_output, reprompt_message)
     except Exception:
         speech_output = 'sorry, i didn\'t understand that. please try again'
@@ -75,13 +84,40 @@ def _parse_request(request):
     if request_type != 'IntentRequest':
         raise Exception()
 
+    # handle LaunchRequest
     intent = request.get('intent', {})
-    if intent.get('name') != 'ItemToggle':
+    intent_name = intent.get('name')
+    if intent_name in ('ItemToggle', 'ItemToggleQuestion'):
+        question = False
+        if intent_name == 'ItemToggleQuestion':
+            question = True
+        return _get_item_toggle_response(intent), question
+    else:
         raise Exception('no intent provided or unknown intent name')
 
+
+def _get_launch_response(intent):
+    speech_output = 'welcome to minder! what can i do for you?'
+    card_output = 'user launched minder'
+    reprompt_message = 'reprompt message. how does this work?'
+    should_end_session = False
+
+    return speech_output, card_output, reprompt_message, should_end_session
+
+
+def _get_item_toggle_response(intent, question=False):
     slots = intent['slots']
     return slots['toggle']['value'], slots['item']['value']
 
+
+def _get_item_toggle_question_response(intent):
+    return
+
+
+@app.route('/test_sms/<number>/<message>')
+def send_message(number, message):
+    send_sms('+1 {}'.format(number), message)
+    return 'success'
 
 if __name__ == '__main__':
     app.run(port=Config.PORT, debug=True)

@@ -87,7 +87,7 @@ def minder():
                 reprompt_message = ''
 
                 if toggle == 'on':
-                    the_job = scheduler.enqueue_in(timedelta(minutes=1),
+                    the_job = scheduler.enqueue_in(timedelta(seconds=3),
                                                    send_sms,
                                                    Config.USER_PHONE_NUMBER,
                                                    'Did you remember to turn off the {}'.format(item))
@@ -189,7 +189,7 @@ def calendar():
 @app.route('/dummy_job')
 def dummy_job():
     from job import dummy_job
-    job = q.enqueue_call(func=dummy_job, args=(), result_ttl=Config.WORKER_TTL))
+    job = q.enqueue_call(func=dummy_job, args=(), result_ttl=Config.WORKER_TTL)
     logger.info('Enqueued job: {}'.format(job.get_id()))
 
 
